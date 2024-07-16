@@ -116,6 +116,9 @@ data
 docs/modelzoo_statistics.md
 mmdet/.mim
 work_dirs/
+outputs/
+demo/rtmdet_tiny_8xb32-300e_coco.py
+demo/multimodal.jpg
 
 # Pytorch
 *.pth

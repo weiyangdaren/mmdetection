@@ -531,6 +531,7 @@ class SwinTransformer(BaseModule):
                  mlp_ratio=4,
                  depths=(2, 2, 6, 2),
                  num_heads=(3, 6, 12, 24),
+                 num_channels_factor=None,
                  strides=(4, 2, 2, 2),
                  out_indices=(0, 1, 2, 3),
                  qkv_bias=True,
@@ -603,11 +604,13 @@ class SwinTransformer(BaseModule):
 
         self.stages = ModuleList()
         in_channels = embed_dims
+        self.num_features = []
         for i in range(num_layers):
+            self.num_features.append(in_channels)
             if i < num_layers - 1:
                 downsample = PatchMerging(
                     in_channels=in_channels,
-                    out_channels=2 * in_channels,
+                    out_channels=2 * in_channels if num_channels_factor is None else in_channels * num_channels_factor[i],
                     stride=strides[i + 1],
                     norm_cfg=norm_cfg if patch_norm else None,
                     init_cfg=None)
@@ -634,7 +637,6 @@ class SwinTransformer(BaseModule):
             if downsample:
                 in_channels = downsample.out_channels
 
-        self.num_features = [int(embed_dims * 2**i) for i in range(num_layers)]
         # Add a norm layer for each output
         for i in out_indices:
             layer = build_norm_layer(norm_cfg, self.num_features[i])[1]

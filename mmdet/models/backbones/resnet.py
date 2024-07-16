@@ -371,9 +371,11 @@ class ResNet(BaseModule):
                  in_channels=3,
                  stem_channels=None,
                  base_channels=64,
+                 with_max_pool=True,
                  num_stages=4,
                  strides=(1, 2, 2, 2),
                  dilations=(1, 1, 1, 1),
+                 num_channels_factor=None,
                  out_indices=(0, 1, 2, 3),
                  style='pytorch',
                  deep_stem=False,
@@ -430,10 +432,12 @@ class ResNet(BaseModule):
             stem_channels = base_channels
         self.stem_channels = stem_channels
         self.base_channels = base_channels
+        self.with_max_pool = with_max_pool
         self.num_stages = num_stages
         assert num_stages >= 1 and num_stages <= 4
         self.strides = strides
         self.dilations = dilations
+        self.num_channels_factor = num_channels_factor
         assert len(strides) == len(dilations) == num_stages
         self.out_indices = out_indices
         assert max(out_indices) < num_stages
@@ -465,7 +469,7 @@ class ResNet(BaseModule):
                 stage_plugins = self.make_stage_plugins(plugins, i)
             else:
                 stage_plugins = None
-            planes = base_channels * 2**i
+            planes = base_channels * 2**i if self.num_channels_factor is None else base_channels * self.num_channels_factor[i]
             res_layer = self.make_res_layer(
                 block=self.block,
                 inplanes=self.inplanes,
@@ -636,7 +640,8 @@ class ResNet(BaseModule):
             x = self.conv1(x)
             x = self.norm1(x)
             x = self.relu(x)
-        x = self.maxpool(x)
+        if self.with_max_pool:
+            x = self.maxpool(x)
         outs = []
         for i, layer_name in enumerate(self.res_layers):
             res_layer = getattr(self, layer_name)
